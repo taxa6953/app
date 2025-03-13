@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>رویدادهای جدید</title>
+    <!-- اضافه کردن Leaflet CSS و JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        #events-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #events-list li {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>رویدادهای جدید</h1>
+    <div id="map"></div>
+    <ul id="events-list"></ul>
+
+    <script>
+        let lastEventId = null;
+        const map = L.map('map').setView([31.05, 49.31], 6); // مختصات مرکز نقشه
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        function checkForNewEvent() {
+            fetch('http://localhost:5000/latest-event')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.id && data.id !== lastEventId) {
+                        lastEventId = data.id;
+                        displayNewEvent(data);
+                        displayNewEventOnMap(data);
+                    }
+                })
+                .catch(error => console.error('خطا در دریافت رویداد جدید:', error));
+        }
+
+        function displayNewEvent(event) {
+            const eventList = document.getElementById('events-list');
+            const newEventItem = document.createElement('li');
+            newEventItem.innerHTML = `
+                <strong>${event.reg1}</strong> - بزرگی: ${event.mag}<br>
+                تاریخ: ${event.date}<br>
+                عمق: ${event.dep} کیلومتر
+            `;
+            eventList.prepend(newEventItem); // اضافه کردن رویداد جدید به بالای لیست
+        }
+
+        function displayNewEventOnMap(event) {
+            L.marker([event.lat, event.long])
+                .addTo(map)
+                .bindPopup(`<b>${event.reg1}</b><br>بزرگی: ${event.mag}`);
+        }
+
+        // هر ۶۰ ثانیه بررسی کند
+        setInterval(checkForNewEvent, 60000);
+    </script>
+</body>
+</html>
